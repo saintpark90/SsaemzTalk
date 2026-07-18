@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.materialLoan.deleteMany();
+  await prisma.material.deleteMany();
+  await prisma.schedule.deleteMany();
   await prisma.attachment.deleteMany();
   await prisma.post.deleteMany();
   await prisma.category.deleteMany();
@@ -83,13 +86,23 @@ async function main() {
     ],
   });
 
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
   await prisma.post.create({
     data: {
       companyId: companyA.id,
       categoryId: categories[0].id,
       authorId: teacher.id,
-      title: "초등 과학 실험 도입부 구성",
-      body: "실험 전 호기심을 유발하는 질문 3개로 시작하면 참여율이 눈에 띄게 올랐습니다.\n\n1. 오늘 결과가 어떻게 될까?\n2. 왜 그렇게 생각하니?\n3. 비슷한 경험을 해본 적 있니?\n\n도입 5분을 아끼지 말고 쓰는 편이 전체 흐름에 도움이 됩니다.",
+      title: "초등 과학 실험 도입부",
+      materialTitle: "신나는 과학탐구",
+      issueNumber: "3호",
+      sessionNumber: "2차시",
+      lessonDate: yesterday,
+      body: "실험 전 호기심을 유발하는 질문 3개로 시작하면 참여율이 올랐습니다.",
+      bodyHtml:
+        "<p>실험 전 호기심을 유발하는 질문 3개로 시작하면 참여율이 올랐습니다.</p><ol><li>오늘 결과가 어떻게 될까?</li><li>왜 그렇게 생각하니?</li><li>비슷한 경험을 해본 적 있니?</li></ol>",
     },
   });
 
@@ -98,8 +111,55 @@ async function main() {
       companyId: companyA.id,
       categoryId: categories[2].id,
       authorId: admin.id,
-      title: "주간 수업 후기 — 집중이 잘 된 날",
-      body: "오늘 초등 3학년 수업에서 모둠 발표를 넣었더니 반응이 좋았습니다. 특히 서로 피드백을 짧게 주고받는 규칙을 정하니 소란이 줄었습니다.",
+      title: "모둠 발표 후기",
+      materialTitle: "신나는 과학탐구",
+      issueNumber: "3호",
+      sessionNumber: "3차시",
+      lessonDate: today,
+      body: "모둠 발표를 넣었더니 반응이 좋았습니다.",
+      bodyHtml:
+        "<p>오늘 초등 3학년 수업에서 <strong>모둠 발표</strong>를 넣었더니 반응이 좋았습니다.</p><p>서로 피드백을 짧게 주고받는 규칙을 정하니 소란이 줄었습니다.</p>",
+    },
+  });
+
+  const material = await prisma.material.create({
+    data: {
+      companyId: companyA.id,
+      name: "자석 실험 키트",
+      description: "초등 과학용 자석·클립 세트",
+      totalQty: 10,
+      availableQty: 8,
+    },
+  });
+
+  await prisma.materialLoan.create({
+    data: {
+      materialId: material.id,
+      userId: teacher.id,
+      quantity: 2,
+      status: "BORROWED",
+      note: "화요일 외근 수업용",
+    },
+  });
+
+  const start = new Date();
+  start.setHours(14, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(15, 0, 0, 0);
+
+  await prisma.schedule.create({
+    data: {
+      companyId: companyA.id,
+      teacherId: teacher.id,
+      createdById: admin.id,
+      title: "○○초 방과후 과학",
+      location: "○○초등학교 과학실",
+      startAt: start,
+      endAt: end,
+      isRecurringWeekly: true,
+      createdByAdmin: true,
+      payAmount: 50000,
+      note: "주 1회",
     },
   });
 

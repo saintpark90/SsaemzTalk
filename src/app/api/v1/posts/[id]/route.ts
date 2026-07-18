@@ -5,11 +5,15 @@ import { getApiUser, getApprovedMembership } from "@/lib/auth-helpers";
 import { unlink } from "fs/promises";
 import path from "path";
 
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getApiUser(req);
+  const user = await getApiUser(_req);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -65,10 +69,22 @@ export async function PATCH(
   }
 
   const body = await req.json().catch(() => null);
-  const title = body?.title !== undefined ? String(body.title).trim() : undefined;
-  const content = body?.body !== undefined ? String(body.body).trim() : undefined;
   const categoryId =
     body?.categoryId !== undefined ? String(body.categoryId).trim() : undefined;
+  const materialTitle =
+    body?.materialTitle !== undefined ? String(body.materialTitle).trim() : undefined;
+  const issueNumber =
+    body?.issueNumber !== undefined ? String(body.issueNumber).trim() : undefined;
+  const sessionNumber =
+    body?.sessionNumber !== undefined ? String(body.sessionNumber).trim() : undefined;
+  const bodyHtml =
+    body?.bodyHtml !== undefined
+      ? String(body.bodyHtml).trim()
+      : body?.body !== undefined
+        ? String(body.body).trim()
+        : undefined;
+  const lessonDate =
+    body?.lessonDate !== undefined ? new Date(body.lessonDate) : undefined;
 
   if (categoryId) {
     const category = await prisma.category.findFirst({
@@ -79,12 +95,30 @@ export async function PATCH(
     }
   }
 
+  if (lessonDate && Number.isNaN(lessonDate.getTime())) {
+    return NextResponse.json({ error: "Invalid lessonDate" }, { status: 400 });
+  }
+
+  const nextMaterial = materialTitle ?? existing.materialTitle;
+  const nextIssue = issueNumber ?? existing.issueNumber;
+  const nextSession = sessionNumber ?? existing.sessionNumber;
+  const title =
+    body?.title !== undefined
+      ? String(body.title).trim()
+      : [nextMaterial, nextIssue, nextSession].filter(Boolean).join(" · ");
+
   const post = await prisma.post.update({
     where: { id },
     data: {
-      ...(title !== undefined ? { title } : {}),
-      ...(content !== undefined ? { body: content } : {}),
+      title,
       ...(categoryId !== undefined ? { categoryId } : {}),
+      ...(materialTitle !== undefined ? { materialTitle } : {}),
+      ...(issueNumber !== undefined ? { issueNumber } : {}),
+      ...(sessionNumber !== undefined ? { sessionNumber } : {}),
+      ...(lessonDate !== undefined ? { lessonDate } : {}),
+      ...(bodyHtml !== undefined
+        ? { bodyHtml, body: stripHtml(bodyHtml) }
+        : {}),
     },
     include: {
       category: true,
@@ -129,7 +163,7 @@ export async function DELETE(
     try {
       await unlink(path.join(process.cwd(), "public", file.storagePath));
     } catch {
-      // ignore missing files
+      // ignore
     }
   }
 

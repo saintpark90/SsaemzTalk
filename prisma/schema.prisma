@@ -10,17 +10,20 @@ datasource db {
 }
 
 model User {
-  id                String       @id @default(cuid())
-  email             String       @unique
+  id                String         @id @default(cuid())
+  email             String         @unique
   name              String
   passwordHash      String?
   image             String?
   provider          String?
   providerAccountId String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   memberships       Membership[]
   posts             Post[]
+  materialLoans     MaterialLoan[]
+  schedules         Schedule[]     @relation("ScheduleTeacher")
+  createdSchedules  Schedule[]     @relation("ScheduleCreator")
 }
 
 model Company {
@@ -34,6 +37,8 @@ model Company {
   memberships        Membership[]
   categories         Category[]
   posts              Post[]
+  materials          Material[]
+  schedules          Schedule[]
 
   @@index([name])
 }
@@ -67,21 +72,27 @@ model Category {
 }
 
 model Post {
-  id          String       @id @default(cuid())
-  companyId   String
-  categoryId  String
-  authorId    String
-  title       String
-  body        String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  attachments Attachment[]
+  id             String       @id @default(cuid())
+  companyId      String
+  categoryId     String
+  authorId       String
+  title          String
+  body           String       @default("")
+  bodyHtml       String       @default("")
+  lessonDate     DateTime     @default(now())
+  materialTitle  String       @default("")
+  issueNumber    String       @default("")
+  sessionNumber  String       @default("")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  attachments    Attachment[]
 
   @@index([companyId, categoryId])
-  @@index([companyId, createdAt])
+  @@index([companyId, lessonDate])
+  @@index([companyId, materialTitle])
 }
 
 model Attachment {
@@ -95,4 +106,60 @@ model Attachment {
   post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
+}
+
+model Material {
+  id           String         @id @default(cuid())
+  companyId    String
+  name         String
+  description  String         @default("")
+  photoPath    String?
+  totalQty     Int            @default(0)
+  availableQty Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  loans        MaterialLoan[]
+
+  @@index([companyId])
+}
+
+model MaterialLoan {
+  id         String    @id @default(cuid())
+  materialId String
+  userId     String
+  quantity   Int       @default(1)
+  status     String    @default("BORROWED") // BORROWED | RETURNED
+  borrowedAt DateTime  @default(now())
+  returnedAt DateTime?
+  note       String    @default("")
+  material   Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([materialId, status])
+  @@index([userId])
+}
+
+model Schedule {
+  id                 String    @id @default(cuid())
+  companyId          String
+  teacherId          String
+  createdById        String
+  title              String
+  location           String    @default("")
+  startAt            DateTime
+  endAt              DateTime
+  isRecurringWeekly  Boolean   @default(false)
+  recurrenceParentId String?
+  createdByAdmin     Boolean   @default(false)
+  payAmount          Int?
+  note               String    @default("")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  teacher            User      @relation("ScheduleTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  createdBy          User      @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([companyId, startAt])
+  @@index([teacherId, startAt])
 }

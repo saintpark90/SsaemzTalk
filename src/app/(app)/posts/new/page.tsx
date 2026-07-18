@@ -13,8 +13,8 @@ export default async function NewPostPage() {
     <>
       <header className="topbar">
         <div>
-          <h1>글 작성</h1>
-          <div className="topbar-meta">수업 계획·아이디어·반응을 공유하세요</div>
+          <h1>기록 작성</h1>
+          <div className="topbar-meta">교재·호수·차시와 함께 수업을 남겨 공유하세요</div>
         </div>
       </header>
       <div className="content">

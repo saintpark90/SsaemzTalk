@@ -15,8 +15,10 @@ export function Sidebar({ userName, companyName, role }: Props) {
   const pathname = usePathname();
 
   const links = [
-    { href: "/feed", label: "피드" },
-    { href: "/posts/new", label: "글 작성" },
+    { href: "/feed", label: "수업 기록" },
+    { href: "/posts/new", label: "기록 작성" },
+    { href: "/materials", label: "교구재" },
+    { href: "/schedules", label: "스케줄" },
     ...(role === MembershipRole.ADMIN
       ? [{ href: "/admin/members", label: "가입 승인" }]
       : []),
@@ -50,7 +52,11 @@ export function Sidebar({ userName, companyName, role }: Props) {
           <strong>{userName}</strong>
           <span>{role === MembershipRole.ADMIN ? "담당자" : "선생님"}</span>
         </div>
-        <button type="button" className="btn btn-ghost" onClick={() => signOut({ callbackUrl: "/" })}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
           로그아웃
         </button>
       </div>

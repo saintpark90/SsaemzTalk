@@ -30,8 +30,8 @@ export default async function EditPostPage({ params }: Props) {
     <>
       <header className="topbar">
         <div>
-          <h1>글 수정</h1>
-          <div className="topbar-meta">{post.title}</div>
+          <h1>기록 수정</h1>
+          <div className="topbar-meta">{post.materialTitle || post.title}</div>
         </div>
       </header>
       <div className="content">
@@ -41,8 +41,13 @@ export default async function EditPostPage({ params }: Props) {
           categories={categories}
           initial={{
             title: post.title,
+            bodyHtml: post.bodyHtml,
             body: post.body,
             categoryId: post.categoryId,
+            materialTitle: post.materialTitle,
+            issueNumber: post.issueNumber,
+            sessionNumber: post.sessionNumber,
+            lessonDate: post.lessonDate.toISOString(),
           }}
         />
       </div>

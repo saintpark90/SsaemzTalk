@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 type Category = { id: string; name: string };
 type Uploaded = {
@@ -16,11 +17,24 @@ type Props = {
   mode?: "create" | "edit";
   postId?: string;
   initial?: {
-    title: string;
-    body: string;
+    title?: string;
+    bodyHtml?: string;
+    body?: string;
     categoryId: string;
+    materialTitle?: string;
+    issueNumber?: string;
+    sessionNumber?: string;
+    lessonDate?: string;
   };
 };
+
+function todayInputValue() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 export function PostForm({ categories, mode = "create", postId, initial }: Props) {
   const router = useRouter();
@@ -28,6 +42,12 @@ export function PostForm({ categories, mode = "create", postId, initial }: Props
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<Uploaded[]>([]);
   const [uploading, setUploading] = useState(false);
+  const initialHtml = initial?.bodyHtml || initial?.body || "";
+  const [bodyHtml, setBodyHtml] = useState(initialHtml);
+  const defaultDate = useMemo(
+    () => initial?.lessonDate?.slice(0, 10) || todayInputValue(),
+    [initial?.lessonDate]
+  );
 
   async function onUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -63,10 +83,20 @@ export function PostForm({ categories, mode = "create", postId, initial }: Props
     setError("");
 
     const form = new FormData(e.currentTarget);
+    const plain = bodyHtml.replace(/<[^>]*>/g, "").trim();
+    if (!plain) {
+      setLoading(false);
+      setError("수업 내용을 입력해 주세요.");
+      return;
+    }
+
     const payload = {
-      title: String(form.get("title") ?? ""),
-      body: String(form.get("body") ?? ""),
       categoryId: String(form.get("categoryId") ?? ""),
+      materialTitle: String(form.get("materialTitle") ?? ""),
+      issueNumber: String(form.get("issueNumber") ?? ""),
+      sessionNumber: String(form.get("sessionNumber") ?? ""),
+      lessonDate: String(form.get("lessonDate") ?? ""),
+      bodyHtml,
       ...(mode === "create" ? { attachments } : {}),
     };
 
@@ -94,56 +124,87 @@ export function PostForm({ categories, mode = "create", postId, initial }: Props
     <form className="panel form" onSubmit={onSubmit}>
       {error ? <div className="error">{error}</div> : null}
 
-      <div className="field">
-        <label htmlFor="categoryId">카테고리</label>
-        <select
-          id="categoryId"
-          name="categoryId"
-          className="select"
-          required
-          defaultValue={initial?.categoryId ?? ""}
-        >
-          <option value="" disabled>
-            선택하세요
-          </option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+      <div className="form-grid-2">
+        <div className="field">
+          <label htmlFor="lessonDate">수업 날짜</label>
+          <input
+            id="lessonDate"
+            name="lessonDate"
+            type="date"
+            className="input"
+            required
+            defaultValue={defaultDate}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="categoryId">분류</label>
+          <select
+            id="categoryId"
+            name="categoryId"
+            className="select"
+            required
+            defaultValue={initial?.categoryId ?? ""}
+          >
+            <option value="" disabled>
+              선택하세요
             </option>
-          ))}
-        </select>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="field">
-        <label htmlFor="title">제목</label>
+        <label htmlFor="materialTitle">교재 / 주제</label>
         <input
-          id="title"
-          name="title"
+          id="materialTitle"
+          name="materialTitle"
           className="input"
           required
-          defaultValue={initial?.title}
+          placeholder="예: 신나는 과학탐구, 봄 동식물 관찰"
+          defaultValue={initial?.materialTitle}
         />
       </div>
 
+      <div className="form-grid-2">
+        <div className="field">
+          <label htmlFor="issueNumber">호수</label>
+          <input
+            id="issueNumber"
+            name="issueNumber"
+            className="input"
+            placeholder="예: 3호"
+            defaultValue={initial?.issueNumber}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="sessionNumber">차시</label>
+          <input
+            id="sessionNumber"
+            name="sessionNumber"
+            className="input"
+            placeholder="예: 2차시"
+            defaultValue={initial?.sessionNumber}
+          />
+        </div>
+      </div>
+
       <div className="field">
-        <label htmlFor="body">내용</label>
-        <textarea
-          id="body"
-          name="body"
-          className="textarea"
-          required
-          defaultValue={initial?.body}
-          placeholder="수업 계획, 아이디어, 수강생 반응 등을 자유롭게 적어주세요."
-        />
+        <label>수업 내용</label>
+        <RichTextEditor value={bodyHtml} onChange={setBodyHtml} />
       </div>
 
       {mode === "create" ? (
         <div className="field">
-          <label htmlFor="files">사진 / 첨부파일</label>
+          <label htmlFor="files">교구 / 수업 사진</label>
           <input
             id="files"
             type="file"
             multiple
+            accept="image/*,.pdf,.doc,.docx,.ppt,.pptx"
             onChange={(e) => onUpload(e.target.files)}
           />
           {uploading ? <span className="muted">업로드 중...</span> : null}
@@ -160,15 +221,11 @@ export function PostForm({ categories, mode = "create", postId, initial }: Props
       ) : null}
 
       <div className="form-actions">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => router.back()}
-        >
+        <button type="button" className="btn btn-secondary" onClick={() => router.back()}>
           취소
         </button>
         <button type="submit" className="btn btn-primary" disabled={loading || uploading}>
-          {loading ? "저장 중..." : mode === "edit" ? "수정 저장" : "게시하기"}
+          {loading ? "저장 중..." : mode === "edit" ? "수정 저장" : "기록 남기기"}
         </button>
       </div>
     </form>

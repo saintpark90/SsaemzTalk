@@ -29,9 +29,9 @@ export default async function PostDetailPage({ params }: Props) {
     <>
       <header className="topbar">
         <div>
-          <h1>게시글</h1>
+          <h1>수업 기록</h1>
           <div className="topbar-meta">
-            <Link href="/feed">← 피드로</Link>
+            <Link href="/feed">← 기록 목록</Link>
           </div>
         </div>
         {canEdit ? <PostActions postId={post.id} /> : null}
@@ -39,17 +39,26 @@ export default async function PostDetailPage({ params }: Props) {
 
       <div className="content">
         <article className="panel post-detail">
-          <span className="badge">{post.category.name}</span>
-          <h1 style={{ marginTop: 12 }}>{post.title}</h1>
-          <div className="meta-row">
+          <div className="meta-row" style={{ marginBottom: 10 }}>
+            <span className="badge">{post.category.name}</span>
+            <span>{new Date(post.lessonDate).toLocaleDateString("ko-KR")}</span>
             <span>{post.author.name}</span>
-            <span>{new Date(post.createdAt).toLocaleString("ko-KR")}</span>
           </div>
-          <div className="post-body">{post.body}</div>
+          <h1>
+            {post.materialTitle || post.title}
+            {post.issueNumber ? ` · ${post.issueNumber}` : ""}
+            {post.sessionNumber ? ` · ${post.sessionNumber}` : ""}
+          </h1>
+          <div
+            className="post-body prose-html"
+            dangerouslySetInnerHTML={{
+              __html: post.bodyHtml || `<p>${post.body}</p>`,
+            }}
+          />
 
           {post.attachments.length > 0 ? (
             <div className="attachments">
-              <strong>첨부파일</strong>
+              <strong>교구 / 수업 사진</strong>
               {post.attachments.map((file) => (
                 <a
                   key={file.id}
