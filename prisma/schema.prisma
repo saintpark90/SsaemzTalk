@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Local MVP uses SQLite. For Postgres, switch provider to "postgresql"
+  // and use docker-compose.yml + DATABASE_URL from .env.example.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  name              String
+  passwordHash      String?
+  image             String?
+  provider          String?
+  providerAccountId String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  memberships       Membership[]
+  posts             Post[]
+}
+
+model Company {
+  id                 String       @id @default(cuid())
+  name               String
+  businessNumber     String?
+  planTier           String       @default("FREE") // FREE | SMALL | MEDIUM | LARGE
+  subscriptionStatus String       @default("TRIAL") // TRIAL | ACTIVE | PAST_DUE | CANCELED
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  memberships        Membership[]
+  categories         Category[]
+  posts              Post[]
+
+  @@index([name])
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  role      String   @default("TEACHER") // TEACHER | ADMIN
+  status    String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId, status])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  posts     Post[]
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+}
+
+model Post {
+  id          String       @id @default(cuid())
+  companyId   String
+  categoryId  String
+  authorId    String
+  title       String
+  body        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([companyId, categoryId])
+  @@index([companyId, createdAt])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  postId      String
+  fileName    String
+  mimeType    String
+  size        Int
+  storagePath String
+  createdAt   DateTime @default(now())
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
