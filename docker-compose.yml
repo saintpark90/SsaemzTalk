@@ -1,3 +1,5 @@
+# Optional local Postgres when Supabase is unavailable (offline / solo).
+# Default development uses Supabase — see .env.example and README.
 services:
   db:
     image: postgres:16-alpine

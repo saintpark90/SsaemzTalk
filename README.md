@@ -5,7 +5,7 @@
 ## 스택
 
 - Next.js 15 (App Router) + TypeScript
-- Prisma + SQLite (로컬 기본) / PostgreSQL용 `docker-compose.yml` 포함
+- Prisma + Supabase (PostgreSQL)
 - NextAuth (이메일 로그인, 소셜 로그인은 UI 자리만)
 - TipTap 리치 에디터
 
@@ -16,15 +16,37 @@
 | Node.js | 18.18+ (20 LTS 권장) |
 | 패키지 매니저 | npm |
 | Git | 필요 |
-| Docker | 선택 (PostgreSQL 사용 시) |
+| Supabase 프로젝트 | 필요 (공유 DB) |
+| Docker | 선택 (로컬 Postgres만 쓸 때) |
 
 ## 시작하기
+
+1. [Supabase](https://supabase.com)에서 프로젝트를 만들고 Database 비밀번호를 저장합니다.
+2. **Project Settings → Database → Connection string** 에서 연결 문자열을 복사합니다.
+   - **Transaction** (pooler, port `6543`) → `DATABASE_URL`
+   - **Session** 또는 **Direct** (port `5432`) → `DIRECT_URL`
+3. 아래 명령으로 로컬을 구성합니다.
 
 ```bash
 git clone https://github.com/saintpark90/SsaemzTalk.git
 cd SsaemzTalk
 npm install
 cp .env.example .env   # Windows: copy .env.example .env
+```
+
+`.env`에 Supabase 연결 문자열을 넣고 `[PASSWORD]`, `[PROJECT-REF]`를 실제 값으로 바꿉니다.
+
+```env
+DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="ssaemztalk-dev-secret-change-in-production"
+UPLOAD_DIR="public/uploads"
+```
+
+연결 문자열의 호스트·리전은 Supabase 대시보드에 표시된 값을 그대로 쓰세요. (프로젝트가 다른 리전이면 `aws-0-...` 부분이 다릅니다.)
+
+```bash
 npx prisma generate
 npx prisma db push
 npm run db:seed
@@ -33,14 +55,7 @@ npm run dev
 
 브라우저에서 [http://localhost:3000](http://localhost:3000) 을 엽니다.
 
-`.env` 기본값:
-
-```env
-DATABASE_URL="file:./dev.db"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="ssaemztalk-dev-secret-change-in-production"
-UPLOAD_DIR="public/uploads"
-```
+> 이미 팀에서 쓰는 Supabase DB가 있고 스키마·시드가 반영돼 있다면 `db push` / `db:seed`는 건너뛰어도 됩니다.
 
 ### 데모 계정
 
@@ -61,19 +76,20 @@ UPLOAD_DIR="public/uploads"
 
 ## 다른 PC에서 Cursor로 셋업하기
 
-[`docs/LOCAL_SETUP_PROMPT.md`](docs/LOCAL_SETUP_PROMPT.md) 의 프롬프트를 새 환경 Cursor에 붙여넣으면 됩니다.
+[`docs/LOCAL_SETUP_PROMPT.md`](docs/LOCAL_SETUP_PROMPT.md) 의 프롬프트를 새 환경 Cursor에 붙여넣으면 됩니다.  
+Supabase `DATABASE_URL` / `DIRECT_URL`만 `.env`에 넣으면 Docker 없이 바로 개발할 수 있습니다.
 
-## PostgreSQL로 전환 (선택)
+## 로컬 Postgres (선택)
+
+오프라인·단독 개발이 필요할 때만 사용합니다.
 
 1. Docker Desktop 실행 후 `docker compose up -d`
-2. `prisma/schema.prisma` 의 `provider` 를 `postgresql` 로 변경
-3. `.env` 의 `DATABASE_URL` 을 Postgres 연결 문자열로 변경
-4. `npx prisma db push && npm run db:seed`
+2. `.env`의 `DATABASE_URL` / `DIRECT_URL`을 localhost 연결 문자열로 변경 (`.env.example` 주석 참고)
+3. `npx prisma db push && npm run db:seed`
 
 ## 커밋하지 않는 로컬 파일
 
-- `.env`
-- `prisma/dev.db`
+- `.env` (Supabase 비밀번호 포함)
 - `public/uploads/**` (업로드된 실제 파일)
 
 ## 이후 확장

@@ -3,10 +3,11 @@ generator client {
 }
 
 datasource db {
-  // Local MVP uses SQLite. For Postgres, switch provider to "postgresql"
-  // and use docker-compose.yml + DATABASE_URL from .env.example.
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  // Supabase Postgres (default). DATABASE_URL = pooler, DIRECT_URL = direct.
+  // Optional local Postgres: docker compose up -d (see .env.example).
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
