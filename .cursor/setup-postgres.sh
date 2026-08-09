@@ -7,6 +7,14 @@ DB_NAME="ssaemztalk"
 DB_USER="ssaemz"
 DB_PASSWORD="ssaemz"
 
+# Install PostgreSQL if it is not already present (e.g. on the default base image
+# with no prebuilt snapshot). On a snapshot/build base the packages already exist,
+# so this is skipped and no apt work happens on every boot.
+if ! command -v pg_isready >/dev/null 2>&1; then
+  sudo apt-get update -y
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
+fi
+
 sudo service postgresql start
 
 # Wait for the server to accept connections.
