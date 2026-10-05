@@ -62,11 +62,8 @@ npm run dev
 Supabase Free 프로젝트는 **약 7일 동안 DB 활동이 없으면 자동 정지**됩니다. 로그인/조회 시 `tenant/user ... not found` 같은 오류가 나면 보통 이 경우입니다.
 
 1. [프로젝트 대시보드](https://supabase.com/dashboard/project/mggbvmnuoygedsjusiji) 에서 **Resume project** 클릭
-2. 복구가 끝날 때까지 1~2분 대기 후 `npm run db:ping`으로 연결 확인
+2. 복구가 끝날 때까지 1~2분 대기
 3. 개발 서버를 재시작한 뒤 다시 로그인
-
-재발 방지: 저장소의 GitHub Actions `Keep Supabase Alive`가 3일마다 DB에 `SELECT 1`을 보냅니다.  
-Actions가 동작하려면 GitHub Secrets에 `DATABASE_URL`, `DIRECT_URL`을 넣어 두세요. (로컬 `.env`와 동일 값)
 
 ### 데모 계정
 

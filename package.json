@@ -11,7 +11,6 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "prisma db push && tsx prisma/seed.ts",
-    "db:ping": "tsx scripts/db-ping.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
